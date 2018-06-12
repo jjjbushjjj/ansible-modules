@@ -42,9 +42,18 @@ options:
             - absent Will make shure the upstream is absent in config
         required: false
         default: "present"
+    validate_certs:
+        description:
+            - If C(no), SSL certificates will not be validated. This should only be used
+              on personally controlled sites using self-signed certificates.
+        required: false
+        default: 'yes'
+        choices: ['yes', 'no']
 
 author:
     - Alexandr Bushuev (jjjbushjjj@gmail.com)
+requirenents:
+    - PTAF API Access
 '''
 EXAMPLES = '''
 # Add new upstream
@@ -94,8 +103,18 @@ def upstream_del(name):
         pass
     pass
 
+def set_headers(user, passwd):
+
+    auth = 'Basic ' + base64.encodestring('%s:%s' % (user, passwd)).replace('\n', '')
+    headers = {
+       'Authorization': auth,
+       'Content-Type' : 'application/json',
+    }
+    return headers
+
 
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.urls import fetch_url
 
 def run_module():
     # define the available arguments/parameters that a user can pass to
@@ -104,9 +123,16 @@ def run_module():
         name=dict(type='str', required=True),
         api_url=dict(type='str', required=False, default="https://localhost:8080/wcs/api/v1"),
         api_user=dict(type='str', required=True),
-        api_pass=dict(type='str', required=True),
-        state=dict(type='str', required=False, default="present")
+        api_pass=dict(type='str', required=True, no_log=True),
+        state=dict(type='str', required=False, default="present"),
+        validate_certs=dict(default='yes', type='bool'),
     )
+
+    base_url = module.params['api_url']
+    state = module.params['state']
+    name = module.params['name']
+    user = module.params['api_user']
+    passwd = module.params['api_pass']
     # seed the result dict in the object
     # we primarily care about changed and state
     # change is if this module effectively modified the target
@@ -132,18 +158,18 @@ def run_module():
     # want to make any changes to the environment, just return the current
     # state with no modifications
     if module.check_mode:
-        if p['state'] == "absent":
-            changed = upstream_exists(p['name'])
-        elif p['state'] == "present":
+        if state == "absent":
+            changed = upstream_exists(name)
+        elif state == "present":
             changed = not upstream_matches(p)[0]
-        module.exit_json(changed=changed, upstream=p['name'])
+        module.exit_json(changed=changed, upstream=name)
 
-    if p['state'] == "absent":
-        changed = upstream_del(p['name'])
+    if state == "absent":
+        changed = upstream_del(name)
     else:
         changed = upstream_add(p)
 
-    module.exit_json(changed=changed, upstream=p['name'])
+    module.exit_json(changed=changed, upstream=name)
 
 
 def main():
