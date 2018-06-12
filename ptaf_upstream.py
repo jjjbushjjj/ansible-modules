@@ -89,19 +89,22 @@ def upstream_add(params):
     """ Add new upstream if it is not present. Also modify all unmached params"""
     if not upstream_exists():
         # Add new upstream and set all params
-        pass
+        return True
     else:
         # Get all unmached params
         unmached_params = upstream_matches(params)[1:]
-        # Set all unmached params
-    pass
+        
+        return True
+
+    return False
 
 def upstream_del(name):
     """ Delete upstream if it is present."""
     if upstream_exists():
         # delete it
-        pass
-    pass
+        return True
+
+    return False
 
 def set_headers(user, passwd):
 
